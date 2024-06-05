@@ -4,9 +4,9 @@ require_once 'Client.php';
 
 class Compte {
     
-    private string $libellé;
+    private string $libelle;
     
-    private int $solde;
+    private float $solde;
 
     private string $devise;
 
@@ -22,14 +22,14 @@ class Compte {
      * @param  mixed $solde init a 0 par défault
      * @return void
      */
-    public function __construct(string $libellé,string $devise,Client $client ,int $solde =0) {
+    public function __construct(string $libelle,string $devise,Client $client ,float $solde =0) {
         $error_msg = [];
-        if (in_array($libellé,["compte courant", "compte à vue", "compte chèque", "compte de dépôt"])) {
-            $this->libellé = $libellé;
+        if (in_array($libelle,["compte courant", "compte à vue", "compte chèque", "compte de dépôt"])) {
+            $this->libelle = $libelle;
         }else {
-            $error_msg[]="Le libellé \"$libellé\" ne correspond pas a ce qu'il est possible de faire ! ";
+            $error_msg[]="Le libelle \"$libelle\" ne correspond pas a ce qu'il est possible de faire ! ";
         }
-        if (in_array($devise,['€','$'])) { //peut-etre trouver d'autre devise sur le net
+        if (in_array($devise,['€','$','£'])) { //peut-etre trouver d'autre devise sur le net
             $this->devise = $devise;
         }else{
             $error_msg[]="La devise \"$devise\" ne correspond pas a ce qu'il est possible de faire ! ";
@@ -37,6 +37,9 @@ class Compte {
         $this->client=$client;
         $this->client->addCompte($this);
         $this->solde = $solde;
+        if (count($error_msg)>0) {
+            throw new Exception($error_msg, 1);
+        }
     }
 
     /**
@@ -92,7 +95,7 @@ class Compte {
      *
      * @return int
      */
-    public function getSolde(): int
+    public function getSolde(): float
     {
         return $this->solde;
     }
@@ -104,7 +107,7 @@ class Compte {
      *
      * @return self
      */
-    public function setSolde(int $solde): self
+    public function setSolde(float $solde): self
     {
         $this->solde = $solde;
 
@@ -112,29 +115,46 @@ class Compte {
     }
 
     /**
-     * Get the value of libellé
+     * Get the value of libelle
      *
      * @return string
      */
-    public function getLibellé(): string
+    public function getLibelle(): string
     {
-        return $this->libellé;
+        return $this->libelle;
     }
 
     /**
-     * Set the value of libellé
+     * Set the value of libelle
      *
-     * @param string $libellé
+     * @param string $libelle
      *
      * @return self
      */
-    public function setLibellé(string $libellé): self
+    public function setLibelle(string $libelle): self
     {
-        $this->libellé = $libellé;
+        $this->libelle = $libelle;
 
         return $this;
     }
-
+    
+    /**
+     * convertisseur est convertisseur primaire car les deux sens ne sont pris en compte dans les transactions ! ! ! ! !
+     *
+     * @param  string $devise
+     * @return void
+     */
+    public function convertisseur(string $devise){
+        
+        switch ($devise) {
+            case '€':
+                return 0.09;
+            case '£':
+                return 0.28;
+            default://$
+                return 0;
+        }
+    }
     public function debiter(float $montant):void{
         $this->solde -= $montant;
     }
@@ -143,13 +163,17 @@ class Compte {
         $this->solde += $montant;
     }
 
-    public function virement(Compte $compte, float $montant){
+    public function virement(Compte $compte, float $montant):void{
         $this->debiter($montant);
-        $compte->crediter($montant);
+        $compte->crediter(round($montant*(1+ ( $this->convertisseur($this->devise) - $this->convertisseur($compte->getDevise()) )), 2) );
     }
     
     public function __toString(){
-        return "$libellé de $client : $solde $devise";
+        return "$this->libelle : $this->solde $this->devise";
+    }
+
+    public function infoClient(){
+        return "Le détenteur du compte est $this->client et il a " . $this->client->age()." ans <br> "."Il possède égallement les comptes : <br>"  . $this->client->printComptes();
     }
 }
 ?>

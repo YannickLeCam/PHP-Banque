@@ -61,7 +61,7 @@ class Client {
 
     public function addCompte(Compte $compte){
         //verifier que $compte est bien de la classe compte jsp si on peut duper le truc de base
-        if (in_array($compte)) {
+        if (in_array($compte,$this->comptes)) {
             throw new Exception("Error addCompte is already here", 1);
             return;
         }else {
@@ -75,9 +75,23 @@ class Client {
     }
 
     public function age(){
-        $age=$this->naissance->date_diff(new DateTime());
+        $age=$this->naissance->diff(new DateTime(),true);
         return $age->y;
     }
+
+    public function printComptes():string{
+        $retour="";
+        foreach ($this->comptes as $compte) {
+            $retour.="<li>$compte</li>";
+        }
+        return $retour;
+    }
+
+    public function information(){
+        return "<h3>$this (". $this->age() ." ans)</h3>" . $this->printComptes();
+         $retour;
+    }
+
     public function __toString(){
         return "$this->nom $this->prenom";
     }
